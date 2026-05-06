@@ -2,6 +2,7 @@ import { App, Modal, Notice } from 'obsidian';
 import type MyPlugin from '../main';
 import { Importer } from '../core/Importer';
 import { ObsidianVaultIO } from './ObsidianVaultIO';
+import { SummaryModal } from './SummaryModal';
 
 export class ImportModal extends Modal {
   constructor(app: App, private readonly plugin: MyPlugin) {
@@ -31,8 +32,7 @@ export class ImportModal extends Modal {
         const summary = await importer.run(new Uint8Array(buffer));
         this.close();
         if (this.plugin.settings.showSummaryModal) {
-          // TODO: Task 13 — replace with real SummaryModal
-          new SummaryModalStub(this.app, summary).open();
+          new SummaryModal(this.app, summary).open();
         } else {
           new Notice(
             `Jaya import: created ${summary.created}, updated ${summary.updated}, skipped ${summary.skippedUnchanged}.`,
@@ -41,25 +41,6 @@ export class ImportModal extends Modal {
       } catch (e) {
         new Notice(`Jaya import failed: ${(e as Error).message}`);
       }
-    });
-  }
-
-  onClose(): void {
-    this.contentEl.empty();
-  }
-}
-
-// Temporary stub for SummaryModal — Task 13 will replace with real implementation
-class SummaryModalStub extends Modal {
-  constructor(app: App, private readonly summary: { created: number; updated: number; skippedUnchanged: number }) {
-    super(app);
-  }
-
-  onOpen(): void {
-    const { contentEl } = this;
-    contentEl.createEl('h2', { text: 'Import Summary' });
-    contentEl.createEl('p', {
-      text: `Created: ${this.summary.created}, Updated: ${this.summary.updated}, Skipped: ${this.summary.skippedUnchanged}`,
     });
   }
 
