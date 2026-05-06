@@ -28,3 +28,14 @@ export interface Manifest {
 }
 
 export type ConflictPolicy = 'splice' | 'replace' | 'new';
+
+export interface VaultIO {
+  /** Snapshot of all .md files in the vault: relative path -> content. */
+  listAllMarkdown(): Promise<Map<string, string>>;
+  /** Reads a file by relative path; throws if missing. */
+  readFile(relPath: string): Promise<string>;
+  /** Creates or overwrites a file; auto-creates parent folders. */
+  writeFile(relPath: string, content: string): Promise<void>;
+  /** Returns true if a file exists at relPath. */
+  exists(relPath: string): Promise<boolean>;
+}
