@@ -1,6 +1,6 @@
 ---
 title: Wraiths Beneath the Tower
-jaya-public-id: ad-PLACEHOLDER-PLACEHOLDER-PLACEHOLDER-XXXX
+jaya-public-id: ad-a4a19d37-cab4a1bc-cab4a1bc-50ae
 jaya-format-version: 1
 jaya-entity-type: adventure
 tags:
