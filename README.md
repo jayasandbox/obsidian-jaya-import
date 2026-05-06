@@ -1,90 +1,63 @@
-# Obsidian Sample Plugin
+# Obsidian Jaya Import
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+Import [Jaya Sandbox Adventure Generator](https://jayasandbox.com) adventures into your Obsidian vault. Re-import safely — your hand-written prose around Jaya-managed sections is preserved.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Features
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+- **Drop-in import** — file-picker modal accepts the `.zip` Jaya produces.
+- **Stable identity** — entities are matched by `jaya-public-id` frontmatter, not filename.
+- **Splice on update** — Jaya-managed content (between `<!-- jaya:begin -->` / `<!-- jaya:end -->`) is replaced; anything outside is yours and stays untouched.
+- **Idempotent** — re-import the same zip and nothing changes.
+- **Aliases accumulate** — renames in Jaya add to the alias array so old wikilinks still resolve.
+- **Mobile-compatible** — works on Obsidian desktop, iOS, and Android.
 
-## First time developing plugins?
+## Install
 
-Quick starting guide for new plugin devs:
+### Recommended (post-store-approval)
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+Settings → Community plugins → Browse → search "Jaya Sandbox Import" → Install → Enable.
 
-## Releasing new releases
+### BRAT (pre-store-approval)
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+1. Install [BRAT](https://obsidian.md/plugins?id=obsidian42-brat).
+2. BRAT → Add Beta plugin → enter `jayasandbox/obsidian-jaya-import`.
+3. Enable "Jaya Sandbox Import" in Community plugins settings.
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+## Usage
 
-## Adding your plugin to the community plugin list
+1. In Jaya, generate an adventure export and choose **Obsidian Vault** format. Download the `.zip`.
+2. In Obsidian: Cmd/Ctrl-P → **Jaya: Import adventure ZIP** → pick the file.
+3. New notes appear under your configured target folder (default `Jaya/`); existing notes are spliced.
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+## Wire format
 
-## How to use
+This plugin implements wire-format **version 1**. The format spec lives in the Jaya repo at `docs/obsidian-export-format/spec.md`.
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+## Settings
 
-## Manually installing the plugin
+| Setting | Default | Notes |
+|---|---|---|
+| Target vault folder | `Jaya` | Where new notes are written. |
+| Conflict policy | Splice | Splice (preserve outside-marker prose), Replace (overwrite whole file), New (create with `-N` suffix). |
+| Show summary modal | On | Toggle the post-import results modal. |
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+## Build from source
 
-## Improve code quality with eslint
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+```
+git clone https://github.com/jayasandbox/obsidian-jaya-import.git
+cd obsidian-jaya-import
+npm install
+npm run build
 ```
 
-If you have multiple URLs, you can also do:
+## Tests
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
+```
+npm test
 ```
 
-## API Documentation
+The Vitest suite covers the pure-TS `core/` module: ManifestValidator, FrontmatterParser, MarkerSplicer, PublicIdIndex, ZipReader, Importer orchestrator, and a fixture-driven parity test against the wire-format reference fixtures.
 
-See https://docs.obsidian.md
+## License
+
+[MIT](LICENSE).
