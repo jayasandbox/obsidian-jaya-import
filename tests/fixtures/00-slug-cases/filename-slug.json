@@ -1,0 +1,12 @@
+[
+  {"input": "Tomas the Quiet", "expected": "Tomas the Quiet"},
+  {"input": "File/With/Slash", "expected": "FileWithSlash"},
+  {"input": "Back\\Slash", "expected": "BackSlash"},
+  {"input": "Q:Mark*Star?", "expected": "QMarkStar"},
+  {"input": "Pipe|Less<Greater>", "expected": "PipeLessGreater"},
+  {"input": "Has \"quotes\"", "expected": "Has quotes"},
+  {"input": "  trim spaces  ", "expected": "trim spaces"},
+  {"input": "double  spaces", "expected": "double spaces"},
+  {"input": "", "expected": ""},
+  {"input": "MixedCASE Spaces", "expected": "MixedCASE Spaces"}
+]

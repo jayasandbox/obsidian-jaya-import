@@ -1,0 +1,11 @@
+[
+  {"input": "Cunning", "expected": "cunning"},
+  {"input": "Curse of the Bone-Magician", "expected": "curse-of-the-bone-magician"},
+  {"input": "Major Goal", "expected": "major-goal"},
+  {"input": "  trim  ", "expected": "trim"},
+  {"input": "non__alpha!@#nums123", "expected": "non-alpha-nums123"},
+  {"input": "MixedCASE", "expected": "mixedcase"},
+  {"input": "leading---hyphens", "expected": "leading-hyphens"},
+  {"input": "", "expected": ""},
+  {"input": "single_word", "expected": "single-word"}
+]

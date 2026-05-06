@@ -1,0 +1,84 @@
+{
+  "world": {
+    "publicId": "11111111-1111-1111-1111-111111111111",
+    "name": "Curse of the Bone-Magician"
+  },
+  "factions": [
+    {
+      "publicId": "22222222-2222-2222-2222-222222222222",
+      "name": "The Black Crown",
+      "factionType": "Cult",
+      "credo": "All things bend to the bone.",
+      "description": "An ascetic order venerating death.",
+      "gradientColor": "#2a4d8c"
+    }
+  ],
+  "npcs": [
+    {
+      "publicId": "33333333-3333-3333-3333-333333333333",
+      "firstName": "Tomas",
+      "lastName": "the Quiet",
+      "useSurname": true,
+      "sex": "Male",
+      "occupationName": "Cultist",
+      "occupationCategory": "Commoner",
+      "personalityTraits": ["Cunning", "Menacing"],
+      "description": "A wiry man with restless hands.",
+      "factionPublicId": "22222222-2222-2222-2222-222222222222"
+    },
+    {
+      "publicId": "44444444-4444-4444-4444-444444444444",
+      "firstName": "Brother",
+      "lastName": "Aldric",
+      "useSurname": true,
+      "sex": "Male",
+      "occupationName": "Cleric",
+      "occupationCategory": "Fantasy",
+      "personalityTraits": ["Devoted"],
+      "description": "A grieving cleric of the Hollowed Sun."
+    }
+  ],
+  "forgedLocs": [
+    {
+      "publicId": "55555555-5555-5555-5555-555555555555",
+      "encounterLocName": "Mansion of the Bone-Magician",
+      "sourceLocType": "AdventureSite",
+      "adventureSiteTheme": "Arcane",
+      "notes": "A cracked tower at the edge of the moor."
+    }
+  ],
+  "narratives": [
+    {
+      "publicId": "66666666-6666-6666-6666-666666666666",
+      "narrativeType": "Quest",
+      "overview": "Wraiths Beneath the Tower",
+      "questReason": "Stop the cult before the wards fail.",
+      "questObjective": "Recover the reliquary",
+      "questDescriptionScope": "Major",
+      "plotActors": [
+        {"npcPublicId": "33333333-3333-3333-3333-333333333333", "roleName": "Antagonist", "sortOrder": 0},
+        {"factionPublicId": "22222222-2222-2222-2222-222222222222", "roleName": "Antagonist", "sortOrder": 1},
+        {"npcPublicId": "44444444-4444-4444-4444-444444444444", "roleName": "Protagonist", "sortOrder": 2}
+      ],
+      "forgedLocPublicIds": ["55555555-5555-5555-5555-555555555555"]
+    }
+  ],
+  "goals": [
+    {
+      "publicId": "77777777-7777-7777-7777-777777777777",
+      "goalType": "Major Goal",
+      "objective": "Steal the Reliquary",
+      "description": "Take the bone-crown reliquary before the binding completes.",
+      "narrativePublicIds": ["66666666-6666-6666-6666-666666666666"],
+      "factionPublicIds": ["22222222-2222-2222-2222-222222222222"]
+    },
+    {
+      "publicId": "88888888-8888-8888-8888-888888888888",
+      "goalType": "Motivation",
+      "objective": "Avenge the Hollowed Sun",
+      "description": "The Black Crown burned the order's chapter house.",
+      "factionPublicIds": ["22222222-2222-2222-2222-222222222222"],
+      "npcPublicIds": ["44444444-4444-4444-4444-444444444444"]
+    }
+  ]
+}
