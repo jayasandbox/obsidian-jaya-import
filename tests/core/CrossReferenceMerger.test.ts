@@ -225,6 +225,102 @@ describe('mergeCrossReferenceSection', () => {
     ]);
   });
 
+  it('appends the section into the incoming fence body when existing has entries but incoming omits the section', () => {
+    // Real scenario: re-importing a different selection where the faction is no
+    // longer cast in any of the export's narratives. Server omits "## Appears in"
+    // entirely — see ObsidianMarkdownRenderer.cs which only emits the heading
+    // when narrativeRoles.Count > 0.
+    const existing = [
+      '> [!jaya-faction] The Circle of Hellbound Slaughter',
+      '> *Kobold warren*',
+      '',
+      '## Appears in',
+      '',
+      "- [[Jaya/Kobald World/Narratives/Plague's Wake!|Plague's Wake!]] — scenario-complication faction",
+    ].join('\n');
+
+    const incoming = [
+      '> [!jaya-faction] The Circle of Hellbound Slaughter',
+      '> *Kobold warren*',
+      '',
+      '## Description',
+      '',
+      'Circle described round.',
+      '',
+      '## Goals',
+      '',
+      '- [[Jaya/Kobald World/Goals/Faction Goal - Kobald Champ|Faction Goal - Kobald Champ]]',
+    ].join('\n');
+
+    const result = mergeCrossReferenceSection(
+      existing,
+      incoming,
+      'faction',
+      new Set(["Plague's Wake!", 'Faction Goal - Kobald Champ']),
+    );
+
+    expect(result).toContain('## Description');
+    expect(result).toContain('Circle described round.');
+    expect(result).toContain('## Goals');
+    expect(result).toContain('- [[Jaya/Kobald World/Goals/Faction Goal - Kobald Champ|Faction Goal - Kobald Champ]]');
+    expect(result).toContain('## Appears in');
+    expect(result).toContain(
+      "- [[Jaya/Kobald World/Narratives/Plague's Wake!|Plague's Wake!]] — scenario-complication faction",
+    );
+
+    // Appears in must be at the END (server convention — see C# renderer).
+    expect(result.indexOf('## Appears in')).toBeGreaterThan(result.indexOf('## Goals'));
+  });
+
+  it('appends "## Narratives" into the incoming fence body when existing Goal has entries but incoming omits it', () => {
+    const existing = [
+      '## Narratives',
+      '',
+      '- [[Jaya/W/Narratives/Old Quest|Old Quest]]',
+    ].join('\n');
+
+    const incoming = [
+      '> [!jaya-goal-major] G',
+      '',
+      '## Description',
+      '',
+      'goal text',
+    ].join('\n');
+
+    const result = mergeCrossReferenceSection(
+      existing,
+      incoming,
+      'goal',
+      new Set(['Old Quest']),
+    );
+
+    expect(result).toContain('## Description');
+    expect(result).toContain('## Narratives');
+    expect(result).toContain('- [[Jaya/W/Narratives/Old Quest|Old Quest]]');
+  });
+
+  it('omits the appended section when all existing entries are dangling (matches server: emit nothing when empty)', () => {
+    const existing = [
+      '## Appears in',
+      '',
+      '- [[Phantom Quest]] — antagonist',
+    ].join('\n');
+
+    const incoming = [
+      '> [!jaya-faction] F',
+      '',
+      '## Description',
+      '',
+      'desc',
+    ].join('\n');
+
+    // Phantom Quest is in neither vault nor incoming export — should drop.
+    const result = mergeCrossReferenceSection(existing, incoming, 'faction', new Set());
+
+    expect(result).toBe(incoming);
+    expect(result).not.toContain('## Appears in');
+  });
+
   it('returns incoming unchanged when existing has no matching section', () => {
     const existing = [
       '> [!jaya-npc] Tomas',

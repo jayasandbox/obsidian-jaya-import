@@ -102,31 +102,51 @@ export function mergeCrossReferenceSection(
   if (!heading) return incomingFenceBody;
 
   const existingSec = findSection(existingFenceBody, heading);
-  const incomingSec = findSection(incomingFenceBody, heading);
-  if (!incomingSec) return incomingFenceBody;
   if (!existingSec || existingSec.entries.length === 0) return incomingFenceBody;
+
+  // The server emits the H2 block conditionally — only when the current export
+  // has at least one entry to list (see ObsidianMarkdownRenderer.cs). So
+  // `incomingSec` may be null even though `existingSec` has accumulated entries
+  // we need to preserve. Treat null as "no incoming entries" rather than as
+  // "skip the merge."
+  const incomingSec = findSection(incomingFenceBody, heading);
+  const incomingEntries = incomingSec?.entries ?? [];
 
   // Union by target basename; incoming wins on conflict.
   const merged = new Map<string, Entry>();
   for (const e of existingSec.entries) merged.set(targetBasename(e.target), e);
-  for (const e of incomingSec.entries) merged.set(targetBasename(e.target), e);
+  for (const e of incomingEntries) merged.set(targetBasename(e.target), e);
 
   // Prune dangling.
   const kept: Entry[] = [];
   for (const e of merged.values()) {
     if (knownTargetBasenames.has(targetBasename(e.target))) kept.push(e);
   }
+  // Nothing left to emit — match server convention (omit the heading entirely
+  // when empty rather than emitting an empty section).
+  if (kept.length === 0) return incomingFenceBody;
 
   // Sort by target name, ordinal.
   kept.sort((a, b) => compareTargetOrdinal(a.target, b.target));
+  const newEntryLines = kept.map(formatEntry);
 
-  // Rebuild: heading line, blank line, entries, then anything after the section.
+  if (incomingSec) {
+    // Replace the existing block in place.
+    const lines = incomingFenceBody.split('\n');
+    const before = lines.slice(0, incomingSec.startLine);
+    const after = lines.slice(incomingSec.endLine);
+    const newSection = [`## ${heading}`, '', ...newEntryLines];
+    if (after.length > 0 && after[0] !== '') newSection.push('');
+    return [...before, ...newSection, ...after].join('\n');
+  }
+
+  // Append at end of fence body — server emits these sections at the bottom
+  // of the body (after Description/Goals/etc.), so this matches convention.
   const lines = incomingFenceBody.split('\n');
-  const before = lines.slice(0, incomingSec.startLine);
-  const after = lines.slice(incomingSec.endLine);
-  const newSection = [`## ${heading}`, '', ...kept.map(formatEntry)];
-  if (after.length > 0 && after[0] !== '') newSection.push('');
-  return [...before, ...newSection, ...after].join('\n');
+  while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+  if (lines.length > 0 && lines[lines.length - 1] !== '') lines.push('');
+  lines.push(`## ${heading}`, '', ...newEntryLines, '');
+  return lines.join('\n');
 }
 
 interface FenceRange {

@@ -196,6 +196,72 @@ describe('Importer.run', () => {
     expect(merged).toContain('GM notes');
   });
 
+  it('preserves accumulated "## Appears in" entries even when the new export OMITS the section', async () => {
+    // Real-world scenario from a user bug report. The server only emits
+    // `## Appears in` when the export has at least one narrative referencing
+    // the entity (see Jaya's ObsidianMarkdownRenderer.cs). If a re-import's
+    // selection includes the faction but no narratives that cast it, the
+    // incoming faction file ships with NO "## Appears in" section at all —
+    // wholesale-splice would erase the user's accumulated cross-export entry.
+    const existingDossier =
+      '---\ntitle: F\naliases:\n  - F\njaya-public-id: faction-1\njaya-entity-type: faction\n---\n' +
+      '<!-- jaya:begin v=1 fingerprint=sha256:OLD -->\n' +
+      "> [!jaya-faction] F\n" +
+      '\n' +
+      '## Appears in\n' +
+      '\n' +
+      "- [[Plague's Wake!]] — scenario-complication faction\n" +
+      '<!-- jaya:end -->\n';
+
+    const wraithsNarrative =
+      "---\ntitle: Plague's Wake!\njaya-public-id: nar-1\n---\nbody\n";
+
+    // Re-export's faction file has Description + Goals but no Appears in
+    // (because this export's selection has no narratives casting the faction).
+    const newDossier =
+      '---\ntitle: F\naliases:\n  - F\njaya-public-id: faction-1\njaya-entity-type: faction\n---\n' +
+      '<!-- jaya:begin v=1 fingerprint=sha256:NEW -->\n' +
+      '> [!jaya-faction] F\n' +
+      '\n' +
+      '## Description\n' +
+      '\n' +
+      'Circle described round.\n' +
+      '\n' +
+      '## Goals\n' +
+      '\n' +
+      '- [[Faction Goal - Kobald Champ]]\n' +
+      '<!-- jaya:end -->\n';
+    const newGoal =
+      '---\ntitle: Faction Goal - Kobald Champ\njaya-public-id: goal-1\n---\nbody\n';
+
+    const zip = new JSZip();
+    zip.file('_jaya/manifest.json', JSON.stringify({
+      formatVersion: 2, exportedAt: '', jayaVersion: '',
+      world: { publicId: 'w', name: '', slug: '' },
+      adventure: { title: '', publicId: '', selectionFingerprint: '' },
+      entityCounts: {},
+    }));
+    zip.file('Jaya/W/Factions/F.md', newDossier);
+    zip.file('Jaya/W/Goals/Faction Goal - Kobald Champ.md', newGoal);
+    const bytes = await zip.generateAsync({ type: 'uint8array' });
+
+    const vault = new InMemoryVault();
+    vault.files.set('Jaya/W/Factions/F.md', existingDossier);
+    vault.files.set("Jaya/W/Narratives/Plague's Wake!.md", wraithsNarrative);
+
+    await new Importer(vault, { conflictPolicy: 'splice', targetFolder: 'Jaya' }).run(bytes);
+
+    const merged = vault.files.get('Jaya/W/Factions/F.md')!;
+    // New content from re-export
+    expect(merged).toContain('## Description');
+    expect(merged).toContain('Circle described round.');
+    expect(merged).toContain('## Goals');
+    expect(merged).toContain('- [[Faction Goal - Kobald Champ]]');
+    // Preserved cross-export entry — even though the incoming had no Appears in
+    expect(merged).toContain('## Appears in');
+    expect(merged).toContain("- [[Plague's Wake!]] — scenario-complication faction");
+  });
+
   it('prunes a cross-reference entry that exists in neither vault nor incoming export', async () => {
     const existingDossier =
       '---\ntitle: Tomas\naliases:\n  - Tomas\njaya-public-id: npc-1\njaya-entity-type: npc\n---\n' +
