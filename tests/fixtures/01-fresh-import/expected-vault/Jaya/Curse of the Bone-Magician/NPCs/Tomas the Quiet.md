@@ -16,23 +16,21 @@ cssclasses:
   - jaya-npc
   - jaya-faction-color-22222222
 ---
+<!-- jaya:begin v=1 fingerprint=sha256:9beb77b38d64d12483254a531269c077fe87428e4fb46883471ae6dbce39d6af -->
 
 > [!jaya-npc] Tomas the Quiet
 > *Member » [[The Black Crown]]*
+>
+> **Sex:** Male
+> **Occupation:** Cultist
+> **Personality:** Cunning · Menacing
+> **Roles:** antagonist in [[Wraiths Beneath the Tower]]
 
-<!-- jaya:begin v=1 fingerprint=sha256:771b0f36539826eae0abb91f6d307a6b96e081858c4c1cf924bce54b4863b0de -->
 ## Description
 
 A wiry man with restless hands.
 
-## Personality
-
-- Cunning
-- Menacing
-
-## Occupation
-
-**Cultist** *(Commoner)*
+**Cultist:** A devoted member of a secret religious group with forbidden or unorthodox beliefs, performing hidden rituals away from mainstream society.
 
 ## Goals
 

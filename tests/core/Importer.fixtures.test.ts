@@ -28,6 +28,12 @@ class FsBackedVault implements VaultIO {
   async exists(rel: string) {
     try { await fs.access(path.join(this.root, rel)); return true; } catch { return false; }
   }
+  async writeConfigFile(rel: string, content: string) {
+    const full = path.join(this.root, rel);
+    await fs.mkdir(path.dirname(full), { recursive: true });
+    await fs.writeFile(full, content, 'utf-8');
+  }
+  async enableSnippet(_name: string) { return true; }
 }
 
 async function walk(root: string, fn: (filePath: string) => Promise<void>) {

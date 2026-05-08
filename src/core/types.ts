@@ -14,6 +14,8 @@ export interface ImportSummary {
   updated: number;
   skippedUnchanged: number;
   errors: string[];
+  cssWritten: boolean;
+  cssEnabled: boolean;
 }
 
 export interface ManifestWorld { publicId: string; name: string; slug: string; }
@@ -34,8 +36,19 @@ export interface VaultIO {
   listAllMarkdown(): Promise<Map<string, string>>;
   /** Reads a file by relative path; throws if missing. */
   readFile(relPath: string): Promise<string>;
-  /** Creates or overwrites a file; auto-creates parent folders. */
+  /** Creates or overwrites a markdown/data file inside the vault tree; auto-creates parent folders. */
   writeFile(relPath: string, content: string): Promise<void>;
   /** Returns true if a file exists at relPath. */
   exists(relPath: string): Promise<boolean>;
+  /**
+   * Writes a config file under `.obsidian/` (outside the vault's tracked tree).
+   * Creates parent folders. Used for installing CSS snippets.
+   */
+  writeConfigFile(relPath: string, content: string): Promise<void>;
+  /**
+   * Best-effort enables a CSS snippet by name (no `.css` suffix).
+   * Returns true if the snippet was successfully enabled, false if the API
+   * was unavailable or threw.
+   */
+  enableSnippet(name: string): Promise<boolean>;
 }

@@ -8,27 +8,25 @@ jaya-entity-type: npc
 tags:
   - kind/npc
   - role/protagonist
-  - occupation/fantasy
+  - occupation/commoner
   - trait/devoted
   - world/curse-of-the-bone-magician
 cssclasses:
   - jaya-npc
 ---
+<!-- jaya:begin v=1 fingerprint=sha256:384b61d1b8c878b6a51547d2fe27b9ec26a15c73d23f49e470f41cc9f69cab6c -->
 
 > [!jaya-npc] Brother Aldric
+> **Sex:** Male
+> **Occupation:** Acolyte
+> **Personality:** Devoted
+> **Roles:** protagonist in [[Wraiths Beneath the Tower]]
 
-<!-- jaya:begin v=1 fingerprint=sha256:0fec21aeb71d20e24266b6e1bdf0bd6bbe42fba0f4b23cc26af86023d2006b34 -->
 ## Description
 
-A grieving cleric of the Hollowed Sun.
+A grieving acolyte of the Hollowed Sun.
 
-## Personality
-
-- Devoted
-
-## Occupation
-
-**Cleric** *(Fantasy)*
+**Acolyte:** Assisted priests and clergy during religious ceremonies and services, learning the rites and responsibilities of the faith.
 
 ## Goals
 

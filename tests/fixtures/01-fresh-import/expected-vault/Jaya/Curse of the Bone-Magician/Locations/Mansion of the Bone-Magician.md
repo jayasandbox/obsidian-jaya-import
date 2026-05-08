@@ -12,12 +12,15 @@ tags:
   - world/curse-of-the-bone-magician
 cssclasses:
   - jaya-location
+  - jaya-loc-color-55555555
 ---
+<!-- jaya:begin v=1 fingerprint=sha256:f5c4cb7bbdeafcced5f7e6aab83bab7d86d6097f6de44961336837fa6ac7691b -->
 
 > [!jaya-location-adventure-site] Mansion of the Bone-Magician
 > *Adventure Site • Arcane*
+>
+> **Featured in:** [[Wraiths Beneath the Tower]]
 
-<!-- jaya:begin v=1 fingerprint=sha256:784c81f73c1750bf6a9a9320bf670a83833044fa41600396d048cc0be65ecb6c -->
 
 ## Notes
 

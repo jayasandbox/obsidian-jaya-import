@@ -1,14 +1,14 @@
 fe3fe51ffb2dfc26180afc2d4fb56f47c44dea7f4235ab4a54632eae2cc8aed5 *./00-slug-cases/filename-slug.json
 1e8558301d3cbdb89af93787c38724c4fa3116b395d2a8d40548de6440857b3e *./00-slug-cases/tag-slug.json
 92a492d6174bc4727d62db4d7a6d472cac94efbba9d46df6f437b0d8d32d9483 *./01-fresh-import/README.md
-c80f8370c1ae540d04a4b913973864374d88ff042616f1189758ea67d50799cc *./01-fresh-import/expected-vault/Jaya/Curse of the Bone-Magician/Adventures/Wraiths Beneath the Tower.md
-e6ee455c406f6d1d5b41b7894d1b60a6c44cf3691410f45d5b41a28ca9e50ae3 *./01-fresh-import/expected-vault/Jaya/Curse of the Bone-Magician/Factions/The Black Crown.md
-e7d21f8dd5a0894f5b3bc2ac0d5c8d81c6ed2f6160a4eea040a3f85598b48d45 *./01-fresh-import/expected-vault/Jaya/Curse of the Bone-Magician/Goals/Avenge the Hollowed Sun.md
-bac527ab8425ab9f5d7ecc188bf0fbfd01cbafc3d4ebf586a0270eda69356e34 *./01-fresh-import/expected-vault/Jaya/Curse of the Bone-Magician/Goals/Steal the Reliquary.md
-1f6f434fb9f90d8fd70566cb1617bf15f7ef0d6f732d9ca8226ac973b368b53f *./01-fresh-import/expected-vault/Jaya/Curse of the Bone-Magician/Locations/Mansion of the Bone-Magician.md
-b77a63756210c9a7bb4c88c95ce21140397f694cebeab424ca8ef39a1b7d6d4f *./01-fresh-import/expected-vault/Jaya/Curse of the Bone-Magician/NPCs/Brother Aldric.md
-9281407a4bca690c14101f0e4345fdd24f300af5f2a37c6d61364734070016ab *./01-fresh-import/expected-vault/Jaya/Curse of the Bone-Magician/NPCs/Tomas the Quiet.md
-9f4883e2dc58a6c5f6ea9cda4ab53c122a2f0fa1a70306a6990d15abce1daa58 *./01-fresh-import/expected-vault/Jaya/Curse of the Bone-Magician/Narratives/Wraiths Beneath the Tower.md
-154fb86ef6229d10536272307860b96d9539f23937c2cafa73a7822d212e4701 *./01-fresh-import/expected-vault/Jaya/Curse of the Bone-Magician/World.md
-8636f0d0e09750a67c4c50e531a995832bc5fca1386aa308b0e27b285889b045 *./01-fresh-import/input.zip
-353d7de3c26952c7db573f215410840a04aed197dc77753b03c85856cf198b7f *./01-fresh-import/source-world.json
+68f39717dcff54020e4b3da67a1bf67581c27a207750483a1f4f3a56af88eb46 *./01-fresh-import/expected-vault/Jaya/Curse of the Bone-Magician/Adventures/Wraiths Beneath the Tower.md
+7d7693aef2a6b97e85e4464672861d670becc2e77cd8dc7f98b54524dfa0a094 *./01-fresh-import/expected-vault/Jaya/Curse of the Bone-Magician/Factions/The Black Crown.md
+68934a15e1a1674d5d7c21ae406771d513609a8417f0dc782f6aaa08a4808308 *./01-fresh-import/expected-vault/Jaya/Curse of the Bone-Magician/Goals/Avenge the Hollowed Sun.md
+05f8871b7c9b932c4895c4d9ff70f4861335646b967a54e11bb02b7dd207461e *./01-fresh-import/expected-vault/Jaya/Curse of the Bone-Magician/Goals/Steal the Reliquary.md
+50978aa753a4dfed0e1d2ac2ef0e18d0b37c39f26fd60a55e866cd63bbf2cefc *./01-fresh-import/expected-vault/Jaya/Curse of the Bone-Magician/Locations/Mansion of the Bone-Magician.md
+cc3bca779be7c0ba4638dc218deaf62129abe1cc29118246f539c251fada2e11 *./01-fresh-import/expected-vault/Jaya/Curse of the Bone-Magician/NPCs/Brother Aldric.md
+f45ab936f5106aa96d04380dc11a9d94823ec4423814f4d73d19edaedbc3e497 *./01-fresh-import/expected-vault/Jaya/Curse of the Bone-Magician/NPCs/Tomas the Quiet.md
+38ac12bc59274fa7e62569d9826782867bb296e749d78b62f5faeb611b3baa9c *./01-fresh-import/expected-vault/Jaya/Curse of the Bone-Magician/Narratives/Wraiths Beneath the Tower.md
+197f9c8af60caa21137b6011874f49935d1f06721a5c846f8f158be81d6e5787 *./01-fresh-import/expected-vault/Jaya/Curse of the Bone-Magician/World.md
+8092b720b049595a2cee8859e2a736c7087195eecb01b1fe72709d8475b007a1 *./01-fresh-import/input.zip
+41fa4ced6b54e315d36e56966c024ccc03b6b350fd09e0e65d67fefaaea9d730 *./01-fresh-import/source-world.json

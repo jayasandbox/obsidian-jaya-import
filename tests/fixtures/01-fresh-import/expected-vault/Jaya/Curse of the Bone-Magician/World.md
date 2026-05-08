@@ -11,10 +11,16 @@ tags:
 cssclasses:
   - jaya-world
 ---
+<!-- jaya:begin v=1 fingerprint=sha256:9a0265fc2da8bfd31e03eebdb5c3215cea56308e4f31967364bad52d731f62c0 -->
 
 > [!jaya-world] Curse of the Bone-Magician
+>
+> **Narratives:** 1
+> **NPCs:** 2
+> **Factions:** 1
+> **Locations:** 1
+> **Goals:** 2
 
-<!-- jaya:begin v=1 fingerprint=sha256:23ec564fbeb3ee9de1443d357a7d3edefe4b826e5d5070ca4a1f4cd75400f0c2 -->
 An imported Jaya world.
 <!-- jaya:end -->
 

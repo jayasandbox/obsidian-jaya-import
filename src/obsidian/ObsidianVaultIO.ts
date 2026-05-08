@@ -34,6 +34,31 @@ export class ObsidianVaultIO implements VaultIO {
     return this.app.vault.getAbstractFileByPath(normalizePath(relPath)) !== null;
   }
 
+  async writeConfigFile(relPath: string, content: string): Promise<void> {
+    const norm = normalizePath(relPath);
+    const idx = norm.lastIndexOf('/');
+    if (idx > 0) {
+      const folder = norm.slice(0, idx);
+      // adapter.mkdir is idempotent across Obsidian versions; ignore "already exists"
+      try { await this.app.vault.adapter.mkdir(folder); } catch { /* exists */ }
+    }
+    await this.app.vault.adapter.write(norm, content);
+  }
+
+  async enableSnippet(name: string): Promise<boolean> {
+    try {
+      // app.customCss is undocumented but widely used (e.g. Style Settings).
+      // Fall back gracefully if the shape changes.
+      const customCss = (this.app as unknown as { customCss?: { setCssEnabledStatus?: (n: string, on: boolean) => void; readSnippets?: () => void; }; }).customCss;
+      if (!customCss?.setCssEnabledStatus) return false;
+      customCss.readSnippets?.();
+      customCss.setCssEnabledStatus(name, true);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   private async ensureFolderExists(filePath: string): Promise<void> {
     const idx = filePath.lastIndexOf('/');
     if (idx <= 0) return;

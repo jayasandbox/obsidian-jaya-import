@@ -32,10 +32,10 @@
       "lastName": "Aldric",
       "useSurname": true,
       "sex": "Male",
-      "occupationName": "Cleric",
-      "occupationCategory": "Fantasy",
+      "occupationName": "Acolyte",
+      "occupationCategory": "Commoner",
       "personalityTraits": ["Devoted"],
-      "description": "A grieving cleric of the Hollowed Sun."
+      "description": "A grieving acolyte of the Hollowed Sun."
     }
   ],
   "forgedLocs": [

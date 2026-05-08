@@ -14,12 +14,30 @@ export class Importer {
   constructor(private readonly vault: VaultIO, private readonly opts: ImporterOptions) {}
 
   async run(zipBytes: Uint8Array): Promise<ImportSummary> {
-    const summary: ImportSummary = { created: 0, updated: 0, skippedUnchanged: 0, errors: [] };
+    const summary: ImportSummary = {
+      created: 0,
+      updated: 0,
+      skippedUnchanged: 0,
+      errors: [],
+      cssWritten: false,
+      cssEnabled: false,
+    };
     const entries = await readZipEntries(zipBytes);
 
     const manifestBytes = entries.get('_jaya/manifest.json');
     if (manifestBytes === undefined) throw new Error('Zip is missing _jaya/manifest.json — not a Jaya export.');
     validateManifest(new TextEncoder().encode(manifestBytes));
+
+    const cssBytes = entries.get('_jaya/jaya-styles.css');
+    if (cssBytes !== undefined) {
+      try {
+        await this.vault.writeConfigFile('.obsidian/snippets/jaya-styles.css', cssBytes);
+        summary.cssWritten = true;
+        summary.cssEnabled = await this.vault.enableSnippet('jaya-styles');
+      } catch (e) {
+        summary.errors.push(`Failed to install jaya-styles.css snippet: ${(e as Error).message}`);
+      }
+    }
 
     const allMarkdown = await this.vault.listAllMarkdown();
     const index = buildIndexFromFiles(allMarkdown);

@@ -11,11 +11,14 @@ tags:
 cssclasses:
   - jaya-goal
 ---
+<!-- jaya:begin v=1 fingerprint=sha256:7b170d20a1cffe6291034a825fb6abed5b9152f712eba5871eee6b534c8839cc -->
 
 > [!jaya-goal-motivation] Avenge the Hollowed Sun
 > *Motivation*
+>
+> **NPCs:** [[Brother Aldric]]
+> **Factions:** [[The Black Crown]]
 
-<!-- jaya:begin v=1 fingerprint=sha256:9c626bc8710ab83d357246cd2de96617a6b6077ab344e09cba7446af190ec957 -->
 ## Description
 
 The Black Crown burned the order's chapter house.

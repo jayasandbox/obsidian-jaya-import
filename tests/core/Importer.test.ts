@@ -5,7 +5,13 @@ import { VaultIO } from '../../src/core/types';
 
 class InMemoryVault implements VaultIO {
   files = new Map<string, string>();
-  async listAllMarkdown() { return new Map([...this.files].filter(([p]) => p.endsWith('.md'))); }
+  configFiles = new Map<string, string>();
+  enabledSnippets = new Set<string>();
+  enableSnippetReturnValue = true;
+
+  async listAllMarkdown() {
+    return new Map([...this.files].filter(([p]) => p.endsWith('.md')));
+  }
   async readFile(p: string) {
     const v = this.files.get(p);
     if (v === undefined) throw new Error(`missing: ${p}`);
@@ -13,6 +19,12 @@ class InMemoryVault implements VaultIO {
   }
   async writeFile(p: string, c: string) { this.files.set(p, c); }
   async exists(p: string) { return this.files.has(p); }
+  async writeConfigFile(p: string, c: string) { this.configFiles.set(p, c); }
+  async enableSnippet(name: string): Promise<boolean> {
+    if (!this.enableSnippetReturnValue) return false;
+    this.enabledSnippets.add(name);
+    return true;
+  }
 }
 
 describe('Importer.run', () => {
@@ -83,5 +95,61 @@ describe('Importer.run', () => {
     expect(merged).toContain('GM notes');
     // Aliases unioned
     expect(merged).toMatch(/aliases:[\s\S]*Alice[\s\S]*Old Alice/);
+  });
+
+  it('writes _jaya/jaya-styles.css to .obsidian/snippets/ and enables it', async () => {
+    const zip = new JSZip();
+    zip.file('_jaya/manifest.json', JSON.stringify({
+      formatVersion: 1, exportedAt: 'now', jayaVersion: 'x',
+      world: { publicId: 'w', name: 'W', slug: 'w' },
+      adventure: { title: 'A', publicId: 'a', selectionFingerprint: 'f' },
+      entityCounts: {},
+    }));
+    zip.file('_jaya/jaya-styles.css', '/* test snippet */');
+    const bytes = await zip.generateAsync({ type: 'uint8array' });
+
+    const vault = new InMemoryVault();
+    const summary = await new Importer(vault, { conflictPolicy: 'splice', targetFolder: 'Jaya' }).run(bytes);
+
+    expect(vault.configFiles.get('.obsidian/snippets/jaya-styles.css')).toBe('/* test snippet */');
+    expect(vault.enabledSnippets.has('jaya-styles')).toBe(true);
+    expect(summary.cssWritten).toBe(true);
+    expect(summary.cssEnabled).toBe(true);
+  });
+
+  it('reports cssEnabled=false when adapter cannot enable snippet', async () => {
+    const zip = new JSZip();
+    zip.file('_jaya/manifest.json', JSON.stringify({
+      formatVersion: 1, exportedAt: '', jayaVersion: '',
+      world: { publicId: 'w', name: '', slug: '' },
+      adventure: { title: '', publicId: '', selectionFingerprint: '' },
+      entityCounts: {},
+    }));
+    zip.file('_jaya/jaya-styles.css', '/* x */');
+    const bytes = await zip.generateAsync({ type: 'uint8array' });
+
+    const vault = new InMemoryVault();
+    vault.enableSnippetReturnValue = false;
+    const summary = await new Importer(vault, { conflictPolicy: 'splice', targetFolder: 'Jaya' }).run(bytes);
+
+    expect(summary.cssWritten).toBe(true);
+    expect(summary.cssEnabled).toBe(false);
+    expect(summary.errors).toEqual([]);
+  });
+
+  it('cssWritten=false when zip has no jaya-styles.css', async () => {
+    const zip = new JSZip();
+    zip.file('_jaya/manifest.json', JSON.stringify({
+      formatVersion: 1, exportedAt: '', jayaVersion: '',
+      world: { publicId: 'w', name: '', slug: '' },
+      adventure: { title: '', publicId: '', selectionFingerprint: '' },
+      entityCounts: {},
+    }));
+    const bytes = await zip.generateAsync({ type: 'uint8array' });
+
+    const summary = await new Importer(new InMemoryVault(), { conflictPolicy: 'splice', targetFolder: 'Jaya' }).run(bytes);
+
+    expect(summary.cssWritten).toBe(false);
+    expect(summary.cssEnabled).toBe(false);
   });
 });

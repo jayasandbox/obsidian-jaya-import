@@ -11,11 +11,14 @@ tags:
 cssclasses:
   - jaya-goal
 ---
+<!-- jaya:begin v=1 fingerprint=sha256:14c3bfa7afe613b159ee7a2ec1d661e409813ce142422c3fbf7fe9529d0b0ed7 -->
 
 > [!jaya-goal-major] Steal the Reliquary
 > *Major Goal*
+>
+> **Factions:** [[The Black Crown]]
+> **Narratives:** [[Wraiths Beneath the Tower]]
 
-<!-- jaya:begin v=1 fingerprint=sha256:aa594247ed722f07e730b9d55d8c0a6707ce4c0cc39bf53ef37476870c46f534 -->
 ## Description
 
 Take the bone-crown reliquary before the binding completes.

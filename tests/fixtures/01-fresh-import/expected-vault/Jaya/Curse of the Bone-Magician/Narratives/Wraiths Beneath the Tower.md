@@ -13,11 +13,14 @@ tags:
 cssclasses:
   - jaya-narrative
 ---
+<!-- jaya:begin v=1 fingerprint=sha256:08066d6bafceea59eaf088beefd9332094a6c7418f4ac5bc926ccaacb37e24d2 -->
 
 > [!jaya-narrative-quest] Wraiths Beneath the Tower
 > *Quest — Major*
+>
+> **Cast:** [[Tomas the Quiet]] · [[Brother Aldric]] · [[The Black Crown]]
+> **Set in:** [[Mansion of the Bone-Magician]]
 
-<!-- jaya:begin v=1 fingerprint=sha256:162aac46fa6cb0c55c3446e080e763a8fb50d43395e3773e4a5254e4ca5d534a -->
 ## Description
 
 Stop the cult before the wards fail.

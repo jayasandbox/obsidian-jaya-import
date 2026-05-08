@@ -15,6 +15,18 @@ export class SummaryModal extends Modal {
     list.createEl('li', { text: `Created: ${summary.created}` });
     list.createEl('li', { text: `Updated: ${summary.updated}` });
     list.createEl('li', { text: `Skipped (unchanged): ${summary.skippedUnchanged}` });
+
+    if (summary.cssWritten) {
+      if (summary.cssEnabled) {
+        list.createEl('li', { text: 'Style snippet installed and enabled.' });
+      } else {
+        const li = list.createEl('li', {
+          text: 'Style snippet installed. Enable it in Settings → Appearance → CSS snippets ("jaya-styles").',
+        });
+        li.style.fontWeight = 'bold';
+      }
+    }
+
     if (summary.errors.length > 0) {
       const errEl = contentEl.createEl('div');
       errEl.createEl('h3', { text: 'Errors' });

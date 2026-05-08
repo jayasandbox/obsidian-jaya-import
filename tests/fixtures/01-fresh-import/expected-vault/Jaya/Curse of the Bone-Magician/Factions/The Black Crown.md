@@ -11,12 +11,17 @@ tags:
   - world/curse-of-the-bone-magician
 cssclasses:
   - jaya-faction
+  - jaya-faction-color-22222222
 ---
+<!-- jaya:begin v=1 fingerprint=sha256:a7b935b3edb378587f9a25468e1b7a83c6965acd557360301103fdd4a1f58a31 -->
 
 > [!jaya-faction] The Black Crown
 > *Cult*
+>
+> **Roles:** antagonist faction in [[Wraiths Beneath the Tower]]
+> **Members:** 1
+> **Goals:** 2 active
 
-<!-- jaya:begin v=1 fingerprint=sha256:7d81a04b8db0f885ee772b2546db57355f9070ca2aabf7b1c9ee24809e92e783 -->
 ## Description
 
 An ascetic order venerating death.

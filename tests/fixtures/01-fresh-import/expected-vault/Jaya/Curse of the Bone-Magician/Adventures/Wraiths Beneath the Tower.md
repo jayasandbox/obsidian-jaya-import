@@ -9,11 +9,11 @@ tags:
 cssclasses:
   - jaya-adventure
 ---
+<!-- jaya:begin v=1 fingerprint=sha256:384d4d0a88a5d031835006008b79a263b837b7b4829d21c0af49dc244c311a6e -->
 
 # Wraiths Beneath the Tower
 *An adventure in [[Curse of the Bone-Magician]]*
 
-<!-- jaya:begin v=1 fingerprint=sha256:ea72e16f48be6a30ff505f6e8a6ce3303d4544edb1845c3e2c038d2aa751d03d -->
 ## Narratives
 
 > [!jaya-narrative-quest] [[Wraiths Beneath the Tower]]
@@ -32,7 +32,7 @@ cssclasses:
 
 ## Standalone Goals
 
-> [!jaya-goal-motivation] Avenge the Hollowed Sun
+> [!jaya-goal-motivation] [[Avenge the Hollowed Sun]]
 > *Motivation*
 >
 > The Black Crown burned the order's chapter house.
