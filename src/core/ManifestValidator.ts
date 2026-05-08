@@ -8,7 +8,7 @@ export function validateManifest(bytes: Uint8Array): Manifest {
   } catch (e) {
     throw new Error(`Failed to parse _jaya/manifest.json: ${(e as Error).message}`);
   }
-  if (!SUPPORTED_FORMAT_VERSIONS.includes(parsed.formatVersion as 1)) {
+  if (!SUPPORTED_FORMAT_VERSIONS.includes(parsed.formatVersion as 1 | 2)) {
     throw new Error(
       `Zip declares formatVersion=${parsed.formatVersion}, but this plugin supports ` +
       `${JSON.stringify(SUPPORTED_FORMAT_VERSIONS)}. Update the plugin.`,

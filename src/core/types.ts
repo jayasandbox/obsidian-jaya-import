@@ -1,4 +1,4 @@
-export const SUPPORTED_FORMAT_VERSIONS = [1] as const;
+export const SUPPORTED_FORMAT_VERSIONS = [1, 2] as const;
 
 export interface ParsedNote {
   relPath: string;

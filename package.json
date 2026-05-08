@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-jaya-import",
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"description": "Jaya Sandbox Adventure importer for Obsidian (https://www.jayasandbox.com)",
 	"main": "main.js",
 	"type": "module",
