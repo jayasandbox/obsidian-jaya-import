@@ -1,5 +1,5 @@
-const BEGIN_RE = /<!--\s*jaya:begin\s+v=(\d+)(?:\s+fingerprint=([^\s]+))?\s*-->/;
-const END_MARKER = '<!-- jaya:end -->';
+export const BEGIN_RE = /<!--\s*jaya:begin\s+v=(\d+)(?:\s+fingerprint=([^\s]+))?\s*-->/;
+export const END_MARKER = '<!-- jaya:end -->';
 
 export function spliceMarkers(existing: string, incoming: string): string {
   const existingMatch = BEGIN_RE.exec(existing);

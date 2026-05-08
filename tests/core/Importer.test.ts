@@ -137,6 +137,112 @@ describe('Importer.run', () => {
     expect(summary.errors).toEqual([]);
   });
 
+  it('unions cross-export "## Appears in" entries instead of wiping them on re-import', async () => {
+    // Existing NPC dossier in vault has accumulated 2 narrative entries from prior exports.
+    const existingDossier =
+      '---\ntitle: Tomas\naliases:\n  - Tomas\njaya-public-id: npc-1\njaya-entity-type: npc\n---\n' +
+      '<!-- jaya:begin v=1 fingerprint=sha256:OLD -->\n' +
+      '> [!jaya-npc] Tomas\n' +
+      '\n' +
+      '## Appears in\n' +
+      '\n' +
+      '- [[Wraiths Beneath the Tower]] — antagonist\n' +
+      '- [[The Old Tomb]] — informant\n' +
+      '<!-- jaya:end -->\n' +
+      'GM notes\n';
+
+    // Vault also has the two existing peer narratives (so they\'re not pruned as dangling).
+    const wraithsNarrative =
+      '---\ntitle: Wraiths Beneath the Tower\njaya-public-id: nar-1\n---\nbody\n';
+    const oldTombNarrative =
+      '---\ntitle: The Old Tomb\njaya-public-id: nar-2\n---\nbody\n';
+
+    // New export ships with ONLY the new narrative (selection-scoped) — pre-fix this would wipe the others.
+    const newDossier =
+      '---\ntitle: Tomas\naliases:\n  - Tomas\njaya-public-id: npc-1\njaya-entity-type: npc\n---\n' +
+      '<!-- jaya:begin v=1 fingerprint=sha256:NEW -->\n' +
+      '> [!jaya-npc] Tomas\n' +
+      '\n' +
+      '## Appears in\n' +
+      '\n' +
+      '- [[Curse of the Reliquary]] — antagonist\n' +
+      '<!-- jaya:end -->\n';
+    const newNarrative =
+      '---\ntitle: Curse of the Reliquary\njaya-public-id: nar-3\n---\nbody\n';
+
+    const zip = new JSZip();
+    zip.file('_jaya/manifest.json', JSON.stringify({
+      formatVersion: 2, exportedAt: '', jayaVersion: '',
+      world: { publicId: 'w', name: '', slug: '' },
+      adventure: { title: '', publicId: '', selectionFingerprint: '' },
+      entityCounts: {},
+    }));
+    zip.file('Jaya/W/NPCs/Tomas.md', newDossier);
+    zip.file('Jaya/W/Narratives/Curse of the Reliquary.md', newNarrative);
+    const bytes = await zip.generateAsync({ type: 'uint8array' });
+
+    const vault = new InMemoryVault();
+    vault.files.set('Jaya/W/NPCs/Tomas.md', existingDossier);
+    vault.files.set('Jaya/W/Narratives/Wraiths Beneath the Tower.md', wraithsNarrative);
+    vault.files.set('Jaya/W/Narratives/The Old Tomb.md', oldTombNarrative);
+
+    await new Importer(vault, { conflictPolicy: 'splice', targetFolder: 'Jaya' }).run(bytes);
+
+    const merged = vault.files.get('Jaya/W/NPCs/Tomas.md')!;
+    expect(merged).toContain('- [[Wraiths Beneath the Tower]] — antagonist');
+    expect(merged).toContain('- [[The Old Tomb]] — informant');
+    expect(merged).toContain('- [[Curse of the Reliquary]] — antagonist');
+    // GM notes outside the fence stay untouched.
+    expect(merged).toContain('GM notes');
+  });
+
+  it('prunes a cross-reference entry that exists in neither vault nor incoming export', async () => {
+    const existingDossier =
+      '---\ntitle: Tomas\naliases:\n  - Tomas\njaya-public-id: npc-1\njaya-entity-type: npc\n---\n' +
+      '<!-- jaya:begin v=1 fingerprint=sha256:OLD -->\n' +
+      '## Appears in\n' +
+      '\n' +
+      '- [[Wraiths Beneath the Tower]] — antagonist\n' +
+      '- [[Phantom Quest]] — informant\n' + // dangler — note never existed in vault
+      '<!-- jaya:end -->\n';
+
+    // No "Phantom Quest.md" anywhere in vault.
+    const wraithsNarrative =
+      '---\ntitle: Wraiths Beneath the Tower\njaya-public-id: nar-1\n---\nbody\n';
+
+    const newDossier =
+      '---\ntitle: Tomas\naliases:\n  - Tomas\njaya-public-id: npc-1\njaya-entity-type: npc\n---\n' +
+      '<!-- jaya:begin v=1 fingerprint=sha256:NEW -->\n' +
+      '## Appears in\n' +
+      '\n' +
+      '- [[Curse of the Reliquary]] — antagonist\n' +
+      '<!-- jaya:end -->\n';
+    const newNarrative =
+      '---\ntitle: Curse of the Reliquary\njaya-public-id: nar-3\n---\nbody\n';
+
+    const zip = new JSZip();
+    zip.file('_jaya/manifest.json', JSON.stringify({
+      formatVersion: 2, exportedAt: '', jayaVersion: '',
+      world: { publicId: 'w', name: '', slug: '' },
+      adventure: { title: '', publicId: '', selectionFingerprint: '' },
+      entityCounts: {},
+    }));
+    zip.file('Jaya/W/NPCs/Tomas.md', newDossier);
+    zip.file('Jaya/W/Narratives/Curse of the Reliquary.md', newNarrative);
+    const bytes = await zip.generateAsync({ type: 'uint8array' });
+
+    const vault = new InMemoryVault();
+    vault.files.set('Jaya/W/NPCs/Tomas.md', existingDossier);
+    vault.files.set('Jaya/W/Narratives/Wraiths Beneath the Tower.md', wraithsNarrative);
+
+    await new Importer(vault, { conflictPolicy: 'splice', targetFolder: 'Jaya' }).run(bytes);
+
+    const merged = vault.files.get('Jaya/W/NPCs/Tomas.md')!;
+    expect(merged).toContain('- [[Wraiths Beneath the Tower]] — antagonist');
+    expect(merged).toContain('- [[Curse of the Reliquary]] — antagonist');
+    expect(merged).not.toContain('Phantom Quest');
+  });
+
   it('cssWritten=false when zip has no jaya-styles.css', async () => {
     const zip = new JSZip();
     zip.file('_jaya/manifest.json', JSON.stringify({
