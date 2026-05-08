@@ -5,35 +5,46 @@
  * Adventure exports are selection-scoped: each zip lists only peer entities
  * the user picked for that export. To prevent re-imports of a different
  * selection from wiping the user's accumulated cross-export context, the
- * consumer unions the existing in-fence section with the incoming one for
- * the three named cross-reference H2 blocks:
+ * consumer unions the existing in-fence sections with the incoming ones for
+ * the named cross-reference H2 blocks of each entity type:
  *
- *   - NPC dossier:     "## Appears in"
- *   - Faction dossier: "## Appears in"
- *   - Goal dossier:    "## Narratives"
+ *   - NPC dossier:      "## Appears in"  +  "## Goals"
+ *   - Faction dossier:  "## Appears in"
+ *   - Goal dossier:     "## Narratives"
+ *   - Location dossier: "## Appears in"
  *
  * Dedupe key is wikilink target *basename* so v1 (bare) and v2 (path-qualified)
  * forms collapse to the same logical entry. On conflict, the incoming entry
  * wins (server is authoritative for current-truth role naming). Entries whose
  * target basename is in neither the vault nor the incoming export are pruned
  * to avoid phantom-note clutter.
+ *
+ * Entries are stored as raw text lines so the merger doesn't need to introspect
+ * the suffix shape: NPC/Faction/Location "Appears in" lines have a `— role`
+ * suffix; NPC "Goals" lines have a `*as <role> in [[Narrative]]*` suffix; Goal
+ * "Narratives" lines have no suffix at all. The first wikilink target on the
+ * line drives dedupe + dangling-prune + sort, and the rest of the line is
+ * preserved verbatim on emit.
  */
 
 import { BEGIN_RE, END_MARKER } from './MarkerSplicer';
 
-const SECTION_BY_ENTITY_TYPE: Record<string, string> = {
-  npc: 'Appears in',
-  faction: 'Appears in',
-  goal: 'Narratives',
+const SECTIONS_BY_ENTITY_TYPE: Record<string, readonly string[]> = {
+  npc:      ['Appears in', 'Goals'],
+  faction:  ['Appears in'],
+  goal:     ['Narratives'],
+  location: ['Appears in'],
 };
 
 interface Entry {
   target: string;
-  alias: string | null;
-  role: string | null;
+  raw: string;
 }
 
-const ENTRY_RE = /^- \[\[([^\]]+)\]\](?:\s+—\s+(.*))?$/;
+// Matches `- [[<target>]]` or `- [[<target>|<alias>]]` at line start. Ignores
+// whatever follows the closing `]]` so suffixes like ` — role` (Appears in),
+// ` *as role in [[…]]*` (NPC Goals), or nothing (Goal Narratives) all work.
+const FIRST_WIKILINK_RE = /^- \[\[([^\]|]+)(?:\|[^\]]+)?\]\]/;
 
 function targetBasename(target: string): string {
   const slash = target.lastIndexOf('/');
@@ -41,27 +52,11 @@ function targetBasename(target: string): string {
 }
 
 function parseEntry(line: string): Entry | null {
-  const m = ENTRY_RE.exec(line);
+  const m = FIRST_WIKILINK_RE.exec(line);
   if (!m) return null;
-  const inside = m[1]!;
-  const role = m[2] ?? null;
-  const pipe = inside.indexOf('|');
-  const target = pipe === -1 ? inside : inside.slice(0, pipe);
-  const alias = pipe === -1 ? null : inside.slice(pipe + 1);
-  return { target, alias, role: role ? role.trim() : null };
+  return { target: m[1]!, raw: line };
 }
 
-function formatEntry(e: Entry): string {
-  const link = e.alias === null ? `[[${e.target}]]` : `[[${e.target}|${e.alias}]]`;
-  return e.role === null ? `- ${link}` : `- ${link} — ${e.role}`;
-}
-
-/**
- * Locates the H2 block named `## <heading>` inside `body` (a fence-body string,
- * i.e. content between begin/end markers). Returns the line range of the block
- * and the entries parsed out of it. The block runs from the heading line up to
- * (but not including) the next H2 heading or end-of-body.
- */
 interface SectionLocation {
   startLine: number;
   endLine: number;
@@ -92,23 +87,19 @@ function compareTargetOrdinal(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-export function mergeCrossReferenceSection(
+/** Single-section merge — replaces the named block in-place or appends it. */
+function mergeOneSection(
   existingFenceBody: string,
   incomingFenceBody: string,
-  entityType: string,
+  heading: string,
   knownTargetBasenames: Set<string>,
 ): string {
-  const heading = SECTION_BY_ENTITY_TYPE[entityType];
-  if (!heading) return incomingFenceBody;
-
   const existingSec = findSection(existingFenceBody, heading);
   if (!existingSec || existingSec.entries.length === 0) return incomingFenceBody;
 
-  // The server emits the H2 block conditionally — only when the current export
-  // has at least one entry to list (see ObsidianMarkdownRenderer.cs). So
-  // `incomingSec` may be null even though `existingSec` has accumulated entries
-  // we need to preserve. Treat null as "no incoming entries" rather than as
-  // "skip the merge."
+  // The server emits the H2 block conditionally — only when this export has at
+  // least one entry to list. So `incomingSec` may be null even though existing
+  // has accumulated entries to preserve.
   const incomingSec = findSection(incomingFenceBody, heading);
   const incomingEntries = incomingSec?.entries ?? [];
 
@@ -122,13 +113,11 @@ export function mergeCrossReferenceSection(
   for (const e of merged.values()) {
     if (knownTargetBasenames.has(targetBasename(e.target))) kept.push(e);
   }
-  // Nothing left to emit — match server convention (omit the heading entirely
-  // when empty rather than emitting an empty section).
+  // Nothing left — match the server's empty-skip convention.
   if (kept.length === 0) return incomingFenceBody;
 
-  // Sort by target name, ordinal.
   kept.sort((a, b) => compareTargetOrdinal(a.target, b.target));
-  const newEntryLines = kept.map(formatEntry);
+  const newEntryLines = kept.map((e) => e.raw);
 
   if (incomingSec) {
     // Replace the existing block in place.
@@ -141,12 +130,27 @@ export function mergeCrossReferenceSection(
   }
 
   // Append at end of fence body — server emits these sections at the bottom
-  // of the body (after Description/Goals/etc.), so this matches convention.
+  // of the body, so this matches convention.
   const lines = incomingFenceBody.split('\n');
   while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
   if (lines.length > 0 && lines[lines.length - 1] !== '') lines.push('');
   lines.push(`## ${heading}`, '', ...newEntryLines, '');
   return lines.join('\n');
+}
+
+export function mergeCrossReferenceSection(
+  existingFenceBody: string,
+  incomingFenceBody: string,
+  entityType: string,
+  knownTargetBasenames: Set<string>,
+): string {
+  const headings = SECTIONS_BY_ENTITY_TYPE[entityType];
+  if (!headings || headings.length === 0) return incomingFenceBody;
+  let result = incomingFenceBody;
+  for (const heading of headings) {
+    result = mergeOneSection(existingFenceBody, result, heading, knownTargetBasenames);
+  }
+  return result;
 }
 
 interface FenceRange {
@@ -182,7 +186,7 @@ export function mergeCrossReferencesInContent(
   entityType: string,
   knownTargetBasenames: Set<string>,
 ): string {
-  if (!SECTION_BY_ENTITY_TYPE[entityType]) return incomingContent;
+  if (!SECTIONS_BY_ENTITY_TYPE[entityType]) return incomingContent;
   const existingFence = findFenceBody(existingContent);
   const incomingFence = findFenceBody(incomingContent);
   if (existingFence === null || incomingFence === null) return incomingContent;

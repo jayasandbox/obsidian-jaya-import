@@ -185,16 +185,152 @@ describe('mergeCrossReferenceSection', () => {
     ].join('\n');
     const incoming = '## Appears in\n\n- [[Other]] — role';
 
-    // adventure / location / narrative / world have no consumer-side merge contract
+    // adventure / narrative / world have no consumer-side merge contract.
+    // (Location now does — see the dedicated test below.)
     expect(
       mergeCrossReferenceSection(existing, incoming, 'adventure', new Set(['Some Entry', 'Other'])),
     ).toBe(incoming);
     expect(
-      mergeCrossReferenceSection(existing, incoming, 'location', new Set(['Some Entry', 'Other'])),
-    ).toBe(incoming);
-    expect(
       mergeCrossReferenceSection(existing, incoming, 'narrative', new Set(['Some Entry', 'Other'])),
     ).toBe(incoming);
+  });
+
+  it('unions "## Appears in" entries for a Location dossier', () => {
+    const existing = [
+      '## Appears in',
+      '',
+      '- [[Jaya/W/Narratives/Plague\'s Wake!|Plague\'s Wake!]]',
+      '- [[Jaya/W/Narratives/Old Quest|Old Quest]]',
+    ].join('\n');
+
+    const incoming = [
+      '## Appears in',
+      '',
+      '- [[Jaya/W/Narratives/New Hunt|New Hunt]]',
+    ].join('\n');
+
+    const result = mergeCrossReferenceSection(
+      existing,
+      incoming,
+      'location',
+      new Set(["Plague's Wake!", 'Old Quest', 'New Hunt']),
+    );
+
+    const entryLines = result.split('\n').filter((l) => l.startsWith('- '));
+    expect(entryLines).toEqual([
+      '- [[Jaya/W/Narratives/New Hunt|New Hunt]]',
+      '- [[Jaya/W/Narratives/Old Quest|Old Quest]]',
+      "- [[Jaya/W/Narratives/Plague's Wake!|Plague's Wake!]]",
+    ]);
+  });
+
+  it('appends Location "## Appears in" when existing has entries but incoming omits it', () => {
+    // Same selection-omits-section pattern that affects NPC/Faction Appears in.
+    const existing = [
+      '## Appears in',
+      '',
+      "- [[Jaya/W/Narratives/Plague's Wake!|Plague's Wake!]]",
+    ].join('\n');
+
+    const incoming = [
+      '> [!jaya-loc-adv-site] Starkhead',
+      '',
+      '## Description',
+      '',
+      'A blasted plain.',
+    ].join('\n');
+
+    const result = mergeCrossReferenceSection(
+      existing,
+      incoming,
+      'location',
+      new Set(["Plague's Wake!"]),
+    );
+
+    expect(result).toContain('## Description');
+    expect(result).toContain('## Appears in');
+    expect(result).toContain("- [[Jaya/W/Narratives/Plague's Wake!|Plague's Wake!]]");
+  });
+
+  it('unions NPC "## Goals" entries with the as-role-in-narrative line shape', () => {
+    // NPC dossiers have BOTH "## Appears in" AND "## Goals" in the merge
+    // contract. Goals lines have a richer shape than Appears in:
+    // `- [[Goal]] *as <role> in [[Narrative]]*` (or bare `- [[Goal]]` for
+    // covered solo goals). The merger preserves the full line on emit.
+    const existing = [
+      '## Appears in',
+      '',
+      '- [[Jaya/W/Narratives/Wraiths|Wraiths]] — antagonist',
+      '',
+      '## Goals',
+      '',
+      '- [[Jaya/W/Goals/Steal the Reliquary|Steal the Reliquary]] *as antagonist in [[Jaya/W/Narratives/Wraiths|Wraiths]]*',
+      '- [[Jaya/W/Goals/Free Hannah|Free Hannah]]',
+    ].join('\n');
+
+    const incoming = [
+      '## Appears in',
+      '',
+      '- [[Jaya/W/Narratives/New Hunt|New Hunt]] — antagonist',
+      '',
+      '## Goals',
+      '',
+      '- [[Jaya/W/Goals/Steal the Bell|Steal the Bell]] *as antagonist in [[Jaya/W/Narratives/New Hunt|New Hunt]]*',
+    ].join('\n');
+
+    const result = mergeCrossReferenceSection(
+      existing,
+      incoming,
+      'npc',
+      new Set([
+        'Wraiths', 'New Hunt',
+        'Steal the Reliquary', 'Free Hannah', 'Steal the Bell',
+      ]),
+    );
+
+    // Both Appears in AND Goals are unioned for NPC.
+    const goalsHeadingIdx = result.indexOf('## Goals');
+    expect(goalsHeadingIdx).toBeGreaterThan(-1);
+    const goalsLines = result
+      .slice(goalsHeadingIdx)
+      .split('\n')
+      .filter((l) => l.startsWith('- '));
+    expect(goalsLines).toEqual([
+      '- [[Jaya/W/Goals/Free Hannah|Free Hannah]]',
+      '- [[Jaya/W/Goals/Steal the Bell|Steal the Bell]] *as antagonist in [[Jaya/W/Narratives/New Hunt|New Hunt]]*',
+      '- [[Jaya/W/Goals/Steal the Reliquary|Steal the Reliquary]] *as antagonist in [[Jaya/W/Narratives/Wraiths|Wraiths]]*',
+    ]);
+
+    // Appears in still works.
+    expect(result).toContain('- [[Jaya/W/Narratives/New Hunt|New Hunt]] — antagonist');
+    expect(result).toContain('- [[Jaya/W/Narratives/Wraiths|Wraiths]] — antagonist');
+  });
+
+  it('appends NPC "## Goals" when existing has goals but incoming omits the section', () => {
+    const existing = [
+      '## Goals',
+      '',
+      '- [[Steal the Reliquary]] *as antagonist in [[Wraiths]]*',
+    ].join('\n');
+
+    const incoming = [
+      '> [!jaya-npc] Tomas',
+      '',
+      '## Description',
+      '',
+      'Body.',
+    ].join('\n');
+
+    const result = mergeCrossReferenceSection(
+      existing,
+      incoming,
+      'npc',
+      new Set(['Steal the Reliquary', 'Wraiths']),
+    );
+
+    expect(result).toContain('## Description');
+    expect(result).toContain('## Goals');
+    expect(result).toContain('- [[Steal the Reliquary]] *as antagonist in [[Wraiths]]*');
   });
 
   it('treats v1 bare wikilinks and v2 path-qualified wikilinks as the same entry (basename dedupe)', () => {
