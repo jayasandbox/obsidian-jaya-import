@@ -45,6 +45,25 @@ export class ObsidianVaultIO implements VaultIO {
     await this.app.vault.adapter.write(norm, content);
   }
 
+  async readConfigFile(relPath: string): Promise<string | null> {
+    const norm = normalizePath(relPath);
+    try {
+      if (!(await this.app.vault.adapter.exists(norm))) return null;
+      return await this.app.vault.adapter.read(norm);
+    } catch {
+      return null;
+    }
+  }
+
+  async deleteConfigFile(relPath: string): Promise<void> {
+    const norm = normalizePath(relPath);
+    try {
+      if (await this.app.vault.adapter.exists(norm)) {
+        await this.app.vault.adapter.remove(norm);
+      }
+    } catch { /* swallow — best-effort cleanup */ }
+  }
+
   async enableSnippet(name: string): Promise<boolean> {
     try {
       // app.customCss is undocumented but widely used (e.g. Style Settings).

@@ -20,6 +20,12 @@ class InMemoryVault implements VaultIO {
   async writeFile(p: string, c: string) { this.files.set(p, c); }
   async exists(p: string) { return this.files.has(p); }
   async writeConfigFile(p: string, c: string) { this.configFiles.set(p, c); }
+  async readConfigFile(p: string): Promise<string | null> {
+    return this.configFiles.get(p) ?? null;
+  }
+  async deleteConfigFile(p: string): Promise<void> {
+    this.configFiles.delete(p);
+  }
   async enableSnippet(name: string): Promise<boolean> {
     if (!this.enableSnippetReturnValue) return false;
     this.enabledSnippets.add(name);
@@ -95,46 +101,6 @@ describe('Importer.run', () => {
     expect(merged).toContain('GM notes');
     // Aliases unioned
     expect(merged).toMatch(/aliases:[\s\S]*Alice[\s\S]*Old Alice/);
-  });
-
-  it('writes _jaya/jaya-styles.css to .obsidian/snippets/ and enables it', async () => {
-    const zip = new JSZip();
-    zip.file('_jaya/manifest.json', JSON.stringify({
-      formatVersion: 1, exportedAt: 'now', jayaVersion: 'x',
-      world: { publicId: 'w', name: 'W', slug: 'w' },
-      adventure: { title: 'A', publicId: 'a', selectionFingerprint: 'f' },
-      entityCounts: {},
-    }));
-    zip.file('_jaya/jaya-styles.css', '/* test snippet */');
-    const bytes = await zip.generateAsync({ type: 'uint8array' });
-
-    const vault = new InMemoryVault();
-    const summary = await new Importer(vault, { conflictPolicy: 'splice', targetFolder: 'Jaya' }).run(bytes);
-
-    expect(vault.configFiles.get('.obsidian/snippets/jaya-styles.css')).toBe('/* test snippet */');
-    expect(vault.enabledSnippets.has('jaya-styles')).toBe(true);
-    expect(summary.cssWritten).toBe(true);
-    expect(summary.cssEnabled).toBe(true);
-  });
-
-  it('reports cssEnabled=false when adapter cannot enable snippet', async () => {
-    const zip = new JSZip();
-    zip.file('_jaya/manifest.json', JSON.stringify({
-      formatVersion: 1, exportedAt: '', jayaVersion: '',
-      world: { publicId: 'w', name: '', slug: '' },
-      adventure: { title: '', publicId: '', selectionFingerprint: '' },
-      entityCounts: {},
-    }));
-    zip.file('_jaya/jaya-styles.css', '/* x */');
-    const bytes = await zip.generateAsync({ type: 'uint8array' });
-
-    const vault = new InMemoryVault();
-    vault.enableSnippetReturnValue = false;
-    const summary = await new Importer(vault, { conflictPolicy: 'splice', targetFolder: 'Jaya' }).run(bytes);
-
-    expect(summary.cssWritten).toBe(true);
-    expect(summary.cssEnabled).toBe(false);
-    expect(summary.errors).toEqual([]);
   });
 
   it('unions cross-export "## Appears in" entries instead of wiping them on re-import', async () => {
@@ -309,19 +275,130 @@ describe('Importer.run', () => {
     expect(merged).not.toContain('Phantom Quest');
   });
 
-  it('cssWritten=false when zip has no jaya-styles.css', async () => {
+  async function makeV3Zip(extras: { defaultCss?: string; curatedCss?: string; userCss?: string }) {
     const zip = new JSZip();
     zip.file('_jaya/manifest.json', JSON.stringify({
-      formatVersion: 1, exportedAt: '', jayaVersion: '',
-      world: { publicId: 'w', name: '', slug: '' },
-      adventure: { title: '', publicId: '', selectionFingerprint: '' },
+      formatVersion: 3, exportedAt: 'now', jayaVersion: 'x',
+      world: { publicId: 'w', name: 'W', slug: 'w' },
+      adventure: { title: 'A', publicId: 'a', selectionFingerprint: 'f' },
       entityCounts: {},
     }));
+    if (extras.defaultCss !== undefined) zip.file('_jaya/jaya-default-styles.css', extras.defaultCss);
+    if (extras.curatedCss !== undefined) zip.file('_jaya/jaya-curated-styles.css', extras.curatedCss);
+    if (extras.userCss !== undefined)    zip.file('_jaya/jaya-user-styles.css', extras.userCss);
+    return zip.generateAsync({ type: 'uint8array' });
+  }
+
+  const SAMPLE_DEFAULT_CSS =
+    '/* @jaya-section layout */\nlayout-rule\n/* @jaya-section-end layout */\n' +
+    '/* @jaya-section narrative-defaults */\nnarrative-rule\n/* @jaya-section-end narrative-defaults */\n' +
+    '/* @jaya-section goal-defaults */\ngoal-rule\n/* @jaya-section-end goal-defaults */\n' +
+    '/* @jaya-section location-defaults */\nlocation-rule\n/* @jaya-section-end location-defaults */\n';
+
+  const SAMPLE_CURATED_CSS =
+    '/* @jaya-entity faction:1a2b3c4d */\nfaction-rule\n/* @jaya-entity-end faction:1a2b3c4d */\n';
+
+  const SAMPLE_USER_CSS =
+    '/* @jaya-section layout */\nlayout-rule\n/* @jaya-section-end layout */\n' +
+    '/* @jaya-entity faction:99887766 */\nuser-faction-rule\n/* @jaya-entity-end faction:99887766 */\n';
+
+  it('Case 1: fresh vault + user export → writes user-styles only', async () => {
+    const bytes = await makeV3Zip({ userCss: SAMPLE_USER_CSS });
+    const vault = new InMemoryVault();
+    const summary = await new Importer(vault, { conflictPolicy: 'splice', targetFolder: 'Jaya' }).run(bytes);
+
+    expect(vault.configFiles.has('.obsidian/snippets/jaya-user-styles.css')).toBe(true);
+    expect(vault.configFiles.has('.obsidian/snippets/jaya-default-styles.css')).toBe(false);
+    expect(vault.configFiles.has('.obsidian/snippets/jaya-curated-styles.css')).toBe(false);
+    expect(summary.userCssWritten).toBe(true);
+    expect(summary.userCssEnabled).toBe(true);
+  });
+
+  it('Case 2: fresh vault + curated → writes defaults + curated', async () => {
+    const bytes = await makeV3Zip({ defaultCss: SAMPLE_DEFAULT_CSS, curatedCss: SAMPLE_CURATED_CSS });
+    const vault = new InMemoryVault();
+    const summary = await new Importer(vault, { conflictPolicy: 'splice', targetFolder: 'Jaya' }).run(bytes);
+
+    expect(vault.configFiles.get('.obsidian/snippets/jaya-default-styles.css')).toBe(SAMPLE_DEFAULT_CSS);
+    expect(vault.configFiles.get('.obsidian/snippets/jaya-curated-styles.css')).toContain('faction:1a2b3c4d');
+    expect(vault.configFiles.has('.obsidian/snippets/jaya-user-styles.css')).toBe(false);
+    expect(summary.defaultCssWritten).toBe(true);
+    expect(summary.curatedCssWritten).toBe(true);
+  });
+
+  it('Case 3: existing user-styles, then curated → user-styles untouched, curated/default added', async () => {
+    const vault = new InMemoryVault();
+    vault.configFiles.set('.obsidian/snippets/jaya-user-styles.css', SAMPLE_USER_CSS);
+    const bytes = await makeV3Zip({ defaultCss: SAMPLE_DEFAULT_CSS, curatedCss: SAMPLE_CURATED_CSS });
+    await new Importer(vault, { conflictPolicy: 'splice', targetFolder: 'Jaya' }).run(bytes);
+
+    expect(vault.configFiles.get('.obsidian/snippets/jaya-user-styles.css')).toBe(SAMPLE_USER_CSS);
+    expect(vault.configFiles.get('.obsidian/snippets/jaya-default-styles.css')).toBe(SAMPLE_DEFAULT_CSS);
+    expect(vault.configFiles.get('.obsidian/snippets/jaya-curated-styles.css')).toContain('faction:1a2b3c4d');
+  });
+
+  it('Case 4: existing default-styles, then user export → default-styles narrative/goal pruned', async () => {
+    const vault = new InMemoryVault();
+    vault.configFiles.set('.obsidian/snippets/jaya-default-styles.css', SAMPLE_DEFAULT_CSS);
+    const bytes = await makeV3Zip({ userCss: SAMPLE_USER_CSS });
+    await new Importer(vault, { conflictPolicy: 'splice', targetFolder: 'Jaya' }).run(bytes);
+
+    const prunedDefault = vault.configFiles.get('.obsidian/snippets/jaya-default-styles.css')!;
+    expect(prunedDefault).not.toContain('narrative-rule');
+    expect(prunedDefault).not.toContain('goal-rule');
+    expect(prunedDefault).toContain('layout-rule');
+    expect(prunedDefault).toContain('location-rule');
+    expect(vault.configFiles.get('.obsidian/snippets/jaya-user-styles.css')).toBe(SAMPLE_USER_CSS);
+  });
+
+  it('Case 5: existing curated-styles, then another curated → UNION', async () => {
+    const vault = new InMemoryVault();
+    vault.configFiles.set('.obsidian/snippets/jaya-curated-styles.css',
+      '/* @jaya-entity faction:11111111 */\nold-rule\n/* @jaya-entity-end faction:11111111 */\n');
+    const bytes = await makeV3Zip({ defaultCss: SAMPLE_DEFAULT_CSS, curatedCss: SAMPLE_CURATED_CSS });
+    await new Importer(vault, { conflictPolicy: 'splice', targetFolder: 'Jaya' }).run(bytes);
+
+    const merged = vault.configFiles.get('.obsidian/snippets/jaya-curated-styles.css')!;
+    expect(merged).toContain('faction:11111111'); // preserved
+    expect(merged).toContain('faction:1a2b3c4d'); // new
+  });
+
+  it('Case 6: legacy v2 zip with jaya-styles.css → treated as user-styles', async () => {
+    const zip = new JSZip();
+    zip.file('_jaya/manifest.json', JSON.stringify({
+      formatVersion: 2, exportedAt: 'now', jayaVersion: 'x',
+      world: { publicId: 'w', name: 'W', slug: 'w' },
+      adventure: { title: 'A', publicId: 'a', selectionFingerprint: 'f' },
+      entityCounts: {},
+    }));
+    zip.file('_jaya/jaya-styles.css', '/* legacy css */');
     const bytes = await zip.generateAsync({ type: 'uint8array' });
+    const vault = new InMemoryVault();
+    await new Importer(vault, { conflictPolicy: 'splice', targetFolder: 'Jaya' }).run(bytes);
 
-    const summary = await new Importer(new InMemoryVault(), { conflictPolicy: 'splice', targetFolder: 'Jaya' }).run(bytes);
+    expect(vault.configFiles.get('.obsidian/snippets/jaya-user-styles.css')).toBe('/* legacy css */');
+  });
 
-    expect(summary.cssWritten).toBe(false);
-    expect(summary.cssEnabled).toBe(false);
+  it('cleans up legacy jaya-styles.css when any new-format file is present', async () => {
+    const vault = new InMemoryVault();
+    vault.configFiles.set('.obsidian/snippets/jaya-styles.css', '/* stale */');
+    const bytes = await makeV3Zip({ userCss: SAMPLE_USER_CSS });
+    await new Importer(vault, { conflictPolicy: 'splice', targetFolder: 'Jaya' }).run(bytes);
+
+    expect(vault.configFiles.has('.obsidian/snippets/jaya-styles.css')).toBe(false);
+  });
+
+  it('reports *CssEnabled=false when snippet adapter cannot enable', async () => {
+    // Graceful degradation: when Obsidian's undocumented customCss API is
+    // unavailable, enableSnippet() returns false. The CSS file should still
+    // be written, but the *CssEnabled flags should be false. No error pushed.
+    const bytes = await makeV3Zip({ userCss: SAMPLE_USER_CSS });
+    const vault = new InMemoryVault();
+    vault.enableSnippetReturnValue = false;
+    const summary = await new Importer(vault, { conflictPolicy: 'splice', targetFolder: 'Jaya' }).run(bytes);
+
+    expect(summary.userCssWritten).toBe(true);
+    expect(summary.userCssEnabled).toBe(false);
+    expect(summary.errors).toEqual([]);
   });
 });

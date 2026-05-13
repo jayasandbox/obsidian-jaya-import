@@ -16,16 +16,21 @@ export class SummaryModal extends Modal {
     list.createEl('li', { text: `Updated: ${summary.updated}` });
     list.createEl('li', { text: `Skipped (unchanged): ${summary.skippedUnchanged}` });
 
-    if (summary.cssWritten) {
-      if (summary.cssEnabled) {
-        list.createEl('li', { text: 'Style snippet installed and enabled.' });
+    const renderCssRow = (label: string, written: boolean, enabled: boolean, name: string) => {
+      if (!written) return;
+      if (enabled) {
+        list.createEl('li', { text: `${label}: installed and enabled.` });
       } else {
         const li = list.createEl('li', {
-          text: 'Style snippet installed. Enable it in Settings → Appearance → CSS snippets ("jaya-styles").',
+          text: `${label}: installed. Enable it in Settings → Appearance → CSS snippets ("${name}").`,
         });
         li.style.fontWeight = 'bold';
       }
-    }
+    };
+
+    renderCssRow('Default styles', summary.defaultCssWritten, summary.defaultCssEnabled, 'jaya-default-styles');
+    renderCssRow('Curated styles', summary.curatedCssWritten, summary.curatedCssEnabled, 'jaya-curated-styles');
+    renderCssRow('User styles',    summary.userCssWritten,    summary.userCssEnabled,    'jaya-user-styles');
 
     if (summary.errors.length > 0) {
       const errEl = contentEl.createEl('div');

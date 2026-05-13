@@ -1,4 +1,4 @@
-export const SUPPORTED_FORMAT_VERSIONS = [1, 2] as const;
+export const SUPPORTED_FORMAT_VERSIONS = [1, 2, 3] as const;
 
 export interface ParsedNote {
   relPath: string;
@@ -14,6 +14,17 @@ export interface ImportSummary {
   updated: number;
   skippedUnchanged: number;
   errors: string[];
+
+  // Per-file CSS install state (v3+).
+  defaultCssWritten: boolean;
+  defaultCssEnabled: boolean;
+  curatedCssWritten: boolean;
+  curatedCssEnabled: boolean;
+  userCssWritten: boolean;
+  userCssEnabled: boolean;
+
+  // Legacy fields — true if any of the three new fields above is true. Kept
+  // for backward compat with any external caller still reading them.
   cssWritten: boolean;
   cssEnabled: boolean;
 }
@@ -45,6 +56,10 @@ export interface VaultIO {
    * Creates parent folders. Used for installing CSS snippets.
    */
   writeConfigFile(relPath: string, content: string): Promise<void>;
+  /** Reads a config file under `.obsidian/`; returns null if missing. */
+  readConfigFile(relPath: string): Promise<string | null>;
+  /** Deletes a config file under `.obsidian/`; no-op if missing. */
+  deleteConfigFile(relPath: string): Promise<void>;
   /**
    * Best-effort enables a CSS snippet by name (no `.css` suffix).
    * Returns true if the snippet was successfully enabled, false if the API

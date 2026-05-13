@@ -5,6 +5,8 @@ import { parseFrontmatter, serializeFrontmatter, mergeAliases } from './Frontmat
 import { spliceMarkers, fingerprintFromMarker } from './MarkerSplicer';
 import { buildIndexFromFiles } from './PublicIdIndex';
 import { mergeCrossReferencesInContent } from './CrossReferenceMerger';
+import { mergeCuratedStyles } from './CuratedStylesMerger';
+import { pruneNarrativeAndGoalSections } from './DefaultStylesPruner';
 
 function basename(p: string): string {
   const slash = p.lastIndexOf('/');
@@ -26,8 +28,10 @@ export class Importer {
       updated: 0,
       skippedUnchanged: 0,
       errors: [],
-      cssWritten: false,
-      cssEnabled: false,
+      defaultCssWritten: false, defaultCssEnabled: false,
+      curatedCssWritten: false, curatedCssEnabled: false,
+      userCssWritten:    false, userCssEnabled:    false,
+      cssWritten:        false, cssEnabled:        false,
     };
     const entries = await readZipEntries(zipBytes);
 
@@ -35,16 +39,70 @@ export class Importer {
     if (manifestBytes === undefined) throw new Error('Zip is missing _jaya/manifest.json — not a Jaya export.');
     validateManifest(new TextEncoder().encode(manifestBytes));
 
-    const cssBytes = entries.get('_jaya/jaya-styles.css');
-    if (cssBytes !== undefined) {
+    // Three-CSS-file v3 scheme. Falls back to legacy v2 "_jaya/jaya-styles.css"
+    // (treated as user-styles) for backcompat with old zips.
+    const defaultCssBytes = entries.get('_jaya/jaya-default-styles.css');
+    const curatedCssBytes = entries.get('_jaya/jaya-curated-styles.css');
+    const userCssBytes    = entries.get('_jaya/jaya-user-styles.css')
+                         ?? entries.get('_jaya/jaya-styles.css'); // legacy v2
+
+    const anyNewFormatCss = defaultCssBytes !== undefined
+                         || curatedCssBytes !== undefined
+                         || userCssBytes    !== undefined;
+
+    if (defaultCssBytes !== undefined) {
       try {
-        await this.vault.writeConfigFile('.obsidian/snippets/jaya-styles.css', cssBytes);
-        summary.cssWritten = true;
-        summary.cssEnabled = await this.vault.enableSnippet('jaya-styles');
+        await this.vault.writeConfigFile('.obsidian/snippets/jaya-default-styles.css', defaultCssBytes);
+        summary.defaultCssWritten = true;
+        summary.defaultCssEnabled = await this.vault.enableSnippet('jaya-default-styles');
       } catch (e) {
-        summary.errors.push(`Failed to install jaya-styles.css snippet: ${(e as Error).message}`);
+        summary.errors.push(`Failed to install jaya-default-styles.css: ${(e as Error).message}`);
       }
     }
+
+    if (curatedCssBytes !== undefined) {
+      try {
+        const existing = await this.vault.readConfigFile('.obsidian/snippets/jaya-curated-styles.css');
+        const merged = mergeCuratedStyles(existing, curatedCssBytes);
+        await this.vault.writeConfigFile('.obsidian/snippets/jaya-curated-styles.css', merged);
+        summary.curatedCssWritten = true;
+        summary.curatedCssEnabled = await this.vault.enableSnippet('jaya-curated-styles');
+      } catch (e) {
+        summary.errors.push(`Failed to install jaya-curated-styles.css: ${(e as Error).message}`);
+      }
+    }
+
+    if (userCssBytes !== undefined) {
+      try {
+        await this.vault.writeConfigFile('.obsidian/snippets/jaya-user-styles.css', userCssBytes);
+        summary.userCssWritten = true;
+        summary.userCssEnabled = await this.vault.enableSnippet('jaya-user-styles');
+
+        // If an existing default-styles is in the vault from a prior curated import,
+        // prune narrative/goal defaults so user-styles owns those selectors cleanly.
+        const existingDefaults = await this.vault.readConfigFile('.obsidian/snippets/jaya-default-styles.css');
+        if (existingDefaults !== null) {
+          const pruned = pruneNarrativeAndGoalSections(existingDefaults);
+          if (pruned !== existingDefaults) {
+            await this.vault.writeConfigFile('.obsidian/snippets/jaya-default-styles.css', pruned);
+          }
+        }
+      } catch (e) {
+        summary.errors.push(`Failed to install jaya-user-styles.css: ${(e as Error).message}`);
+      }
+    }
+
+    // Clean up legacy jaya-styles.css snippet from pre-v3 imports — it would
+    // otherwise shadow the new tri-file scheme alphabetically.
+    if (anyNewFormatCss) {
+      try {
+        await this.vault.deleteConfigFile('.obsidian/snippets/jaya-styles.css');
+      } catch { /* swallow — best-effort */ }
+    }
+
+    // Legacy field compatibility — aggregate the three new flags.
+    summary.cssWritten = summary.defaultCssWritten || summary.curatedCssWritten || summary.userCssWritten;
+    summary.cssEnabled = summary.defaultCssEnabled || summary.curatedCssEnabled || summary.userCssEnabled;
 
     const allMarkdown = await this.vault.listAllMarkdown();
     const index = buildIndexFromFiles(allMarkdown);
